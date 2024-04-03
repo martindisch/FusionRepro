@@ -1,0 +1,6 @@
+@FusionRepro_HostAddress = http://localhost:5122
+
+GET {{FusionRepro_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
