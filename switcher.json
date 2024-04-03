@@ -1,0 +1,8 @@
+{
+  "solution": "FusionRepro.sln",
+  "solutionFolder": null,
+  "mappings": {
+    "ZiggyCreatures.FusionCache": "../FusionCache/src/ZiggyCreatures.FusionCache/ZiggyCreatures.FusionCache.csproj"
+  },
+  "removeProjects": true
+}

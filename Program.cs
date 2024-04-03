@@ -1,29 +1,37 @@
-var builder = WebApplication.CreateBuilder(args);
+using Microsoft.AspNetCore.Mvc;
+using ZiggyCreatures.Caching.Fusion;
 
+var builder = WebApplication.CreateBuilder(args);
+builder.Services
+    .AddLogging(c => c.AddSimpleConsole(o => o.TimestampFormat = "[HH:mm:ss] "))
+    .AddFusionCache().WithDefaultEntryOptions(new FusionCacheEntryOptions
+    {
+        Duration = TimeSpan.FromSeconds(10),
+        EagerRefreshThreshold = 0.1f,
+    });
 var app = builder.Build();
 
-var summaries = new[]
+app.MapGet("/hello/{name}", async (
+    string name,
+    [FromServices] IFusionCache fusionCache,
+    ILogger<Greeting> logger,
+    CancellationToken cancellationToken) =>
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+    return await fusionCache.GetOrSetAsync(
+        name,
+        factoryToken => GetGreetingAsync(name, logger, factoryToken),
+        token: cancellationToken);
+});
 
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
+static async Task<Greeting> GetGreetingAsync(string name, ILogger<Greeting> logger, CancellationToken cancellationToken)
 {
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+    logger.LogInformation("Executing factory for {Key}", name);
+    await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken);
+    logger.LogInformation("Finishing factory for {Key}", name);
+
+    return new Greeting($"Hello, {name}!");
 }
+
+public record Greeting(string Text);
